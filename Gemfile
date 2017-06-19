@@ -1,0 +1,28 @@
+#source 'http://rubygems.org'
+source 'http://10.0.3.55:18082/repository/rubygems-group/'
+
+
+
+gem 'cucumber'#, '2.0.2'
+gem 'rspec'#, '3.3.0'
+gem 'selenium-webdriver'#, '2.47.1'
+gem 'watir'
+gem 'watir-webdriver'#, '0.8.0'
+gem 'require_all'#, '1.3.2'
+gem 'rake'#, '10.4.2'
+#gem 'bundler', '1.10.5'
+gem 'faker'#, '1.4.3'
+gem 'rautomation'# '0.17.0'
+gem 'logger'#, '1.2.8'
+# gem to connect to saucelabs and also dynamically change browser parameters
+gem 'saucelabs'#, '0.5'
+gem 'nokogiri'#, '1.6.6.2'
+gem 'rest-client'#, '1.8.0'
+gem 'cuke_sniffer'#, '0.0.8'
+gem 'uuidtools'#, '2.1.5'
+gem 'encryptor'#, '1.3.0'
+#gem 'oracle_raw'
+gem 'json'
+#gem 'ruby-oci8'
+gem 'headless'
+gem 'phantomjs'

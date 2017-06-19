@@ -1,0 +1,154 @@
+Jenkins Master
+==============
+FROM ubuntu:16.04
+MAINTAINER Ben <eoludotun@metabolon.com>
+
+EXPOSE 8080
+ENV DOCKER_COMPOSE_VERSION 1.13.0
+ENV JENKINS_HOME /var/lib/jenkins
+
+
+
+# Let's start with some basic stuff.
+RUN apt-get update -qq && apt-get install -qqy \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    lxc \ apk \
+    iptables
+
+RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+
+
+
+
+# Install Docker
+RUN curl -sSL https://get.docker.com/ | sh
+#RUN apt-get install docker-ce
+
+# Install Jenkins
+RUN wget -q -O - https://jenkins-ci.org/debian/jenkins-ci.org.key | apt-key add -
+RUN sh -c 'echo deb http://pkg.jenkins-ci.org/debian binary/ > /etc/apt/sources.list.d/jenkins.list'
+RUN apt-get update && apt-get install -y zip jenkins && rm -rf /var/lib/apt/lists/*
+RUN usermod -a -G docker jenkins
+VOLUME /var/lib/jenkins
+
+# Install Docker Compose
+RUN curl -L https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
+RUN chmod +x /usr/local/bin/docker-compose
+
+# Install base packages
+RUN apt-get update
+RUN apt-get upgrade
+RUN apt-get install ca-certificates && update-ca-certificates
+# Change TimeZone
+
+ENV TZ=America/New_York
+# Clean APK cache
+RUN rm -rf /var/cache/apk/*
+
+RUN  apt-get update
+
+
+
+CMD ["/usr/bin/java",  "-jar",  "/usr/share/jenkins/jenkins.war"]
+
+########################################
+
+version: '2'
+services:
+  master:
+    image: around25/jenkins-docker-master
+    restart: always
+    ports:
+      - 19090:8080
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /home/docker:/var/jenkins_home
+      - data:/var/lib/jenkins
+    networks:
+      default:
+        aliases:
+          - master.jenkins
+
+===============================
+Redmin project management Image
+=================
+version: '2'
+
+services:
+
+  redmine:
+    image: redmine
+    ports:
+      - 8989:3000
+    environment:
+      REDMINE_DB_MYSQL: db
+      REDMINE_DB_PASSWORD: example
+    depends_on:
+      - db
+    restart: always
+
+  db:
+    image: mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: example
+      MYSQL_DATABASE: redmine
+    restart: always
+
+
+
+    ============================
+    Ruby Image
+    ======================
+
+
+FROM ruby:2.3.3
+
+MAINTAINER Ben <eoludotun@metabolon.com>
+
+ENV REFRESHED_AT 2015-08-07
+
+RUN apt-get update -qq && apt-get install -y build-essential
+
+# postgres prerequisites
+RUN apt-get install -y libpq-dev
+
+# nokogiri prerequisites
+RUN apt-get install -y libxml2-dev libxslt1-dev
+
+# capybara-webkit prerequisites
+RUN apt-get install -y libqt4-webkit libqt4-dev xvfb
+
+# node.js prerequisites
+RUN apt-get install -y python python-dev python-pip python-virtualenv
+
+
+RUN gem install bundler
+
+# cleanup
+RUN rm -rf /var/lib/apt/lists/*
+
+# install latest nodejs
+RUN \
+  cd /tmp && \
+  wget http://nodejs.org/dist/node-latest.tar.gz && \
+  tar xvzf node-latest.tar.gz && \
+  rm -f node-latest.tar.gz && \
+  cd node-v* && \
+  ./configure && \
+  CXX="g++ -Wno-unused-local-typedefs" make && \
+  CXX="g++ -Wno-unused-local-typedefs" make install && \
+  cd /tmp && \
+  rm -rf /tmp/node-v* && \
+  npm install -g npm && \
+  echo '\n# Node.js\nexport PATH="node_modules/.bin:$PATH"' >> /root/.bashrc
+
+WORKDIR /app
+ONBUILD ADD . /app
+# Prevent (most) docker runs of this image and print the above message.
+ENTRYPOINT printf "$MESSAGE" && printf "ABORTING CONTAINER\\n\\n" && false
+
+CMD ["bash"]
+
+===============================

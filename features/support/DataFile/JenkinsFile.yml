@@ -1,0 +1,153 @@
+Deploy_To_Staging
+================
+node {
+      try
+      {
+          stage('Pull Latest Ruby Image (eoludotun/ben-ruby-image:latest) from DockerHub ')
+          {
+              docker.image('eoludotun/ben-ruby-image:latest').inside {
+
+    stage("Install Bundler") {
+      sh "gem install bundler --no-rdoc --no-ri"
+    }
+
+    stage("what is my Gem source") {
+       sh "gem source"
+
+    }
+     stage("Checkout Automation Test Code From GitHub") {
+                checkout([$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'eoleuotun', url: 'https://github.com/eoleuotun/Docker_AUTOMATION_API_DEMO.git']]])
+              }
+
+              stage("Build All Test Library Package") {
+                  sh "gem install bundle"
+                  sh "bundle install"
+                  sh "gem list"
+
+              }
+
+              stage("Run Acceptance Test (Sanity / Regression Test)") {
+                  sh '''bundle exec cucumber features/
+'''
+              }
+               stage("Generating Comphrensive Report For Management View") {
+                step([$class: 'CucumberReportPublisher', fileExcludePattern: '', fileIncludePattern: '', ignoreFailedTests: false, jenkinsBasePath: '', jsonReportDirectory: '', missingFails: false, parallelTesting: false, pendingFails: false, skippedFails: false, undefinedFails: false])
+
+    }
+
+              stage("Acceptance Testing Completed "){
+              echo '==========================================='
+              echo '###########: Happy Testing Metabolon :######'
+              echo '==========================================='
+
+              }
+              }
+          }
+
+
+    }
+     catch (Exception err){
+        currentBuild.result = 'FAILURE'
+    }
+    echo "RESULT: ${currentBuild.result}"
+}
+
+
+
+====================
+API_Image_Pulling
+====================
+
+ node {
+      try
+      {
+          stage('Pull Latest Image to build CONTAINER')
+          {
+              echo '==========================================='
+              echo 'Pulling Latest Image to build new CONTAINER'
+              echo '==========================================='
+              sh 'docker pull asimio/multiversion-api-jersey-swagger:1.0.34'
+          }
+      }
+     catch (Exception err){
+        currentBuild.result = 'FAILURE'
+    }
+    echo "RESULT: ${currentBuild.result}"
+}
+
+
+
+=====================          ==
+DEMO_API_Acceptance_Test
+===================
+node {
+      try
+      {
+          stage('Pull Latest Ruby Image (eoludotun/ben-ruby-image:latest) from DockerHub ')
+          {
+              docker.image('eoludotun/ben-ruby-image:latest').inside {
+
+
+
+    stage("Install Bundler") {
+      sh "gem install bundler --no-rdoc --no-ri"
+      sh "gem list"
+    }
+
+    stage("what is my Gem source") {
+       sh "gem source"
+
+    }
+     stage("Checkout Automation Test Code From GitHub") {
+                checkout([$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'eoleuotun', url: 'https://github.com/eoleuotun/Docker_AUTOMATION_API_DEMO.git']]])
+              }
+
+              stage("Build All Test Library Package") {
+                  sh "gem install bundle"
+                  sh "bundle install"
+                  sh "gem list"
+
+              }
+
+              stage("Run Acceptance Test (Sanity / Regression Test)") {
+                  sh '''bundle exec cucumber features/
+'''
+
+                  echo 'Happy Testing Metabolon'
+
+              }
+               stage("delete images") {
+
+                sh "gem install bundle"
+              }
+              stage("Testing stage")
+              }
+          }
+
+
+    }
+     catch (Exception err){
+        currentBuild.result = 'FAILURE'
+    }
+    echo "RESULT: ${currentBuild.result}"
+}
+
+================
+
+BUILD SCRIPT
+ ==============
+ #!/bin/bash
+
+ set -o pipefail
+
+ IMAGE= "asimio/multiversion-api-jersey-swagger"
+ VERSION="1.0.34"
+
+ docker build -t ${IMAGE}:${VERSION} . | tee build.log || exit 1
+ ID=$(tail -1 build.log | awk '{print $3;}')
+ docker tag $ID ${IMAGE}:latest
+
+ docker images | grep ${IMAGE}
+
+ docker run --rm ${IMAGE}:latest /opt/java7/bin/java -version
+ =========
